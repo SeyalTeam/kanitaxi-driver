@@ -23,6 +23,9 @@ class AuthProvider with ChangeNotifier {
 
   bool get isAuthenticated => _user != null && (_driverId?.isNotEmpty ?? false);
 
+  bool get hasUserButNoDriver =>
+      _user != null && (_driverId == null || _driverId!.isEmpty);
+
   String get displayName {
     final name = user?['name']?.toString();
     if (name != null && name.isNotEmpty) {

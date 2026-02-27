@@ -46,20 +46,16 @@ class ApiService {
         };
       }
 
-      final driverId = await resolveDriverId(user: user, token: token);
-      if (driverId == null || driverId.isEmpty) {
-        return {
-          'success': false,
-          'message': 'This account is not linked to a driver profile.',
-        };
-      }
-
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
       await prefs.setString('user', jsonEncode(user));
-      await prefs.setString('driverId', driverId);
 
-      return {'success': true, 'user': user, 'driverId': driverId};
+      final driverId = await resolveDriverId(user: user, token: token);
+      if (driverId != null && driverId.isNotEmpty) {
+        await prefs.setString('driverId', driverId);
+      }
+
+      return {'success': true, 'user': user, 'driverId': driverId ?? ''};
     } catch (error) {
       debugPrint('Login error: $error');
       return {
@@ -183,6 +179,7 @@ class ApiService {
           'file',
           fileBytes,
           filename: _sanitizeUploadName(fileName),
+          contentType: _guessMediaType(fileName),
         ),
       );
 
@@ -223,16 +220,16 @@ class ApiService {
         };
       }
 
+      final errorMsg = _extractErrorMessage(decoded);
       return {
         'success': false,
-        'message': _extractErrorMessage(decoded) ?? 'Could not upload photo.',
+        'message':
+            errorMsg ??
+            'Upload failed (${response.statusCode}): ${response.body}',
       };
     } catch (error) {
       debugPrint('Upload media error: $error');
-      return {
-        'success': false,
-        'message': 'Unable to upload photo. Please try again.',
-      };
+      return {'success': false, 'message': 'Network error: $error'};
     }
   }
 
@@ -689,5 +686,16 @@ class ApiService {
     }
 
     return '';
+  }
+
+  http.MediaType _guessMediaType(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) {
+      return http.MediaType('image', 'png');
+    }
+    if (lower.endsWith('.webp')) {
+      return http.MediaType('image', 'webp');
+    }
+    return http.MediaType('image', 'jpeg');
   }
 }

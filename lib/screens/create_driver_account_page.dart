@@ -129,9 +129,24 @@ class _CreateDriverAccountPageState extends State<CreateDriverAccountPage> {
       if (uploadResult['success'] == true) {
         photoMediaId = uploadResult['mediaId']?.toString();
       } else {
-        debugPrint(
-          'Photo upload did not return success: ${uploadResult['message']}',
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              uploadResult['message']?.toString() ??
+                  'Photo upload failed. Please try again.',
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
         );
+        return;
       }
     }
 
